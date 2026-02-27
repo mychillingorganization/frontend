@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CreatePage from './pages/CreatePage'; // added CreatePage
 import './App.css';
+import MyTemplates from './pages/MyTemplates';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/create" element={<CreatePage />} />
+        <Route path="/mytemplate" element={<MyTemplates />} />
       </Routes>
     </Router>
   );
