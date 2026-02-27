@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './MyTemplates.css';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate, Link } from 'react-router-dom'; 
 
 
 // Dữ liệu mẫu hiển thị danh sách các Template
@@ -27,16 +27,15 @@ const MyTemplates = () => {
 
   return (
     <div className="my-templates-container">
-      {/* Top Navbar */}
       <nav className="top-navbar">
-        <div className="nav-logo">
+        <Link to="/" className="nav-logo" style={{ textDecoration: 'none' }}>
           <div className="logo-icon">
             <span style={{color: '#4285F4'}}>&lt;</span>
             <span style={{color: '#EA4335'}}>/</span>
             <span style={{color: '#FBBC05'}}>&gt;</span>
           </div>
           <span className="logo-text">BUGKATHON</span>
-        </div>
+        </Link>
         <h1 className="nav-title">Bugkathon</h1>
         <div className="nav-avatar">
           <svg width="45" height="45" viewBox="0 0 45 45" fill="none">
