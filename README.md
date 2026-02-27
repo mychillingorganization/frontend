@@ -2,7 +2,7 @@
 
 Bugkathon is a React-based web app designed for designing SVG certificates and bulk-generating them into PDFs using dynamic data. This repository contains the standalone frontend prototype.
 
-## 🚀 Quick Start
+## 1. Quick Start
 ```bash
 # 1. Install dependencies
 npm install
@@ -12,14 +12,14 @@ npm start
 ```
 *Open [http://localhost:3000](http://localhost:3000) to view it in the browser.*
 
-## 🧬 Core Architecture
+## 2. Core Architecture
 - **Framework & Routing:** React.js, `react-router-dom`
 - **Canvas Engine:** `react-konva` (drag & drop design tools)
 - **Data Parsing:** `papaparse` (handles CSV & Google Sheets parsing)
 - **PDF Generation:** `jspdf` & `jszip` (renders canvases offline, compiles to an archive)
 - **Data Persistence:** Mocked internally via browser `localStorage`
 
-## �️ Backend Integration
+## 3. Backend Integration
 This frontend is built as a self-contained prototype but is pre-configured for real backend deployment. 
 Check `src/config/api.js` for the **Axios** setup. It contains:
 - Pre-made interceptors for JWT authorization headers.
