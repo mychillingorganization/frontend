@@ -412,7 +412,7 @@ const CreatePage = () => {
             {/* ===== TOPBAR ===== */}
             <header className="create-topbar">
                 <div className="topbar-left">
-                    <button className="icon-btn" onClick={() => window.location.href = '/'}>
+                    <button className="icon-btn" onClick={() => window.location.href = '/templates'}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18L9 12L15 6" /></svg>
                     </button>
                     <span className="back-label">Back to My Templates</span>
