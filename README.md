@@ -18,14 +18,23 @@ Bugkathon is a powerful, React-based web application designed for creating, mana
 - **My Templates Library:** Browse your designs, duplicate existing layouts as starting points, or delete old ones.
 - **Pre-loaded Designs:** Comes injected with 3 fully-functional, pre-made template examples out of the box.
 
-### 3. Bulk PDF & CSV Generation
-- **Local CSV Parsing:** Upload a real `.csv` file directly into the browser. The system leverages `papaparse` to extract all table data instantly without needing a backend server.
-- **Live Preview:** As you map your template to your CSV, the generator provides a live updating Konva canvas showing exactly how the final render will look for the first row of your dataset.
+### 3. Bulk Generation & Execution Workflows
+- **Dual Data Sources:**
+  - **Local CSV Upload:** Import a real `.csv` file directly into the browser.
+  - **Google Sheets:** Paste a public Google Sheets link. The system dynamically converts the URL, fetches the live data, and parses it natively into the UI over HTTP.
+- **Workflow Pipeline:** 
+  - **Create PDF Archive:** Renders high-resolution PDFs using `jspdf` and packages them into a `.zip` archive using `jszip`.
+  - **Google Drive Sync (Mock):** Simulates uploading the output payload seamlessly to a connected drive.
+  - **Send Emails (Mock):** Select an extracted email column from your dataset drop-down, and watch the system simulate dispatching personalized certificates to all recipients!
+- **Live Preview Dashboard:** As you map your variables to your Data Source, the exact look of your output updates instantly on a preview certificate canvas.
 - **Batch Exporting Engine:** 
-  - Iterates silently through your entire CSV dataset using a hidden, off-screen Konva stage.
-  - Replaces all dynamic text layers with personalized data.
-  - Converts every document natively into high-resolution PDFs using `jspdf`.
-  - Packages the resultant files into a `.zip` archive using `jszip` and triggers a single, frictionless browser download.
+  - Iterates silently through your entire dataset using a hidden, off-screen Konva stage.
+  - Normalizes international and Vietnamese character accents automatically for clean `[id]_[name].pdf` filenames.
+  - Replaces all dynamic text layers with personalized data flawlessly!
+
+### 4. Authentication Pipeline Mockup
+- **Simulated OAuth:** The Login page features a mock Google Sign-in flow that visually replicates the authentic OAuth redirect, delays, and state provisioning.
+- **Complete Mock Ecosystem:** `ProfilePage.js` is equipped with functional state controls to Delete Account or standard Sign-out, fully tied into a `useAuth` conceptual lifecycle.
 
 ---
 
