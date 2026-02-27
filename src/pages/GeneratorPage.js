@@ -57,6 +57,8 @@ const GeneratorPage = () => {
     const offscreenStageRef = useRef(null);
 
     const [processingRowIndex, setProcessingRowIndex] = useState(-1);
+    const [execOptions, setExecOptions] = useState({ pdf: true, drive: false, email: false });
+    const [emailColumn, setEmailColumn] = useState('');
 
     const addLog = (msg) => {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -159,6 +161,8 @@ const GeneratorPage = () => {
     const handleGenerate = async () => {
         if (!selectedTemplate) return addLog('Error: No template selected.');
         if (!sheetData || sheetData.length === 0) return addLog('Error: No data available. Upload CSV first.');
+        if (!execOptions.pdf && !execOptions.drive && !execOptions.email) return addLog('Error: Select at least one Execution Option.');
+        if (execOptions.email && !emailColumn) return addLog('Error: Select an Email Column to send emails.');
 
         setIsGenerating(true);
         setProgress(0);
@@ -203,7 +207,9 @@ const GeneratorPage = () => {
                     fileName = `${combined.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
                 }
 
-                zip.file(fileName, pdfBlob);
+                if (execOptions.pdf || execOptions.drive) {
+                    zip.file(fileName, pdfBlob);
+                }
 
                 setProgress(Math.round(((i + 1) / sheetData.length) * 100));
             } catch (err) {
@@ -211,14 +217,30 @@ const GeneratorPage = () => {
             }
         }
 
-        addLog('Zipping PDF files...');
-        try {
-            const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, 'Bugkathon_Generated_Assets.zip');
-            addLog('Ready. Download complete!');
-        } catch (err) {
-            addLog(`Error zipping files: ${err.message}`);
+        if (execOptions.pdf) {
+            addLog('Zipping and downloading PDF files...');
+            try {
+                const content = await zip.generateAsync({ type: 'blob' });
+                saveAs(content, 'Bugkathon_Generated_Assets.zip');
+                addLog('Download complete!');
+            } catch (err) {
+                addLog(`Error zipping files: ${err.message}`);
+            }
         }
+
+        if (execOptions.drive) {
+            addLog('Syncing generated assets to Google Drive...');
+            await new Promise(r => setTimeout(r, 1500));
+            addLog('Successfully saved to Google Drive!');
+        }
+
+        if (execOptions.email) {
+            addLog(`Dispatching ${sheetData.length} emails securely...`);
+            await new Promise(r => setTimeout(r, 2000));
+            addLog('All emails sent successfully!');
+        }
+
+        addLog('Ready. Batch Execution Complete!');
 
         setProcessingRowIndex(-1);
         setIsGenerating(false);
@@ -417,13 +439,33 @@ const GeneratorPage = () => {
                         {/* EXECUTION OPTIONS */}
                         <div className="gen-card">
                             <div className="gen-card-title">EXECUTION OPTIONS</div>
-                            <div className="execution-options">
-                                <label className="exec-opt"><span style={{ color: '#EA4335' }}>📄</span> Create PDF</label>
-                                <label className="exec-opt"><span style={{ color: '#FBBC04' }}>🗂️</span> Save to Drive</label>
-                                <label className="exec-opt"><span style={{ color: '#34A853' }}>✉️</span> Send Email</label>
+                            <div className="execution-options" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '16px' }}>
+                                <label className="exec-opt" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={execOptions.pdf} onChange={e => setExecOptions({ ...execOptions, pdf: e.target.checked })} />
+                                    <span style={{ color: '#EA4335' }}>📄</span> Create PDF Archive
+                                </label>
+                                <label className="exec-opt" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={execOptions.drive} onChange={e => setExecOptions({ ...execOptions, drive: e.target.checked })} />
+                                    <span style={{ color: '#FBBC04' }}>🗂️</span> Save to Drive <span style={{ fontSize: '10px', color: '#9CA3AF' }}>(Mock)</span>
+                                </label>
+                                <label className="exec-opt" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={execOptions.email} onChange={e => setExecOptions({ ...execOptions, email: e.target.checked })} />
+                                    <span style={{ color: '#34A853' }}>✉️</span> Send Email <span style={{ fontSize: '10px', color: '#9CA3AF' }}>(Mock)</span>
+                                </label>
                             </div>
-                            <button className="start-gen-btn" onClick={handleGenerate} disabled={isGenerating}>
-                                Start Generation & Send
+
+                            {execOptions.email && (
+                                <div style={{ marginTop: '16px', padding: '12px', background: '#F8F9FA', borderRadius: '6px', border: '1px solid #E8EAED' }}>
+                                    <label style={{ fontSize: '11px', color: '#5F6368', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Select Email Column:</label>
+                                    <select value={emailColumn} onChange={e => setEmailColumn(e.target.value)} className="mapping-select-box" style={{ width: '100%' }}>
+                                        <option value="">-- Choose Column --</option>
+                                        {sheetColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            )}
+
+                            <button className="start-gen-btn" onClick={handleGenerate} disabled={isGenerating} style={{ marginTop: '16px' }}>
+                                Execute Workflow
                             </button>
                         </div>
 
