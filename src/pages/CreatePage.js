@@ -1,6 +1,62 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Stage, Layer, Rect, Text, Transformer, Circle, RegularPolygon, Star, Line as KonvaLine } from 'react-konva';
+import { Stage, Layer, Rect, Text, Transformer, Circle, RegularPolygon, Star, Line as KonvaLine, Image as KonvaImage } from 'react-konva';
 import './CreatePage.css';
+
+// ImageElement: Loads an image from a data URI and renders it on the Konva canvas
+const ImageElement = ({ src, shapeProps, isSelected, onSelect, onChange }) => {
+    const shapeRef = useRef();
+    const trRef = useRef();
+    const [img, setImg] = useState(null);
+
+    useEffect(() => {
+        const image = new window.Image();
+        image.src = src;
+        image.onload = () => setImg(image);
+    }, [src]);
+
+    useEffect(() => {
+        if (isSelected && trRef.current && shapeRef.current) {
+            trRef.current.nodes([shapeRef.current]);
+            trRef.current.getLayer().batchDraw();
+        }
+    }, [isSelected]);
+
+    if (!img) return null;
+
+    return (
+        <React.Fragment>
+            <KonvaImage
+                image={img}
+                x={shapeProps.x}
+                y={shapeProps.y}
+                width={shapeProps.width}
+                height={shapeProps.height}
+                opacity={shapeProps.opacity != null ? shapeProps.opacity : 1}
+                ref={shapeRef}
+                onClick={onSelect}
+                onTap={onSelect}
+                draggable
+                onDragEnd={(e) => onChange({ ...shapeProps, x: e.target.x(), y: e.target.y() })}
+                onTransformEnd={() => {
+                    const node = shapeRef.current;
+                    const sx = node.scaleX();
+                    const sy = node.scaleY();
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    onChange({
+                        ...shapeProps,
+                        x: node.x(), y: node.y(),
+                        width: Math.max(5, node.width() * sx),
+                        height: Math.max(5, node.height() * sy),
+                    });
+                }}
+            />
+            {isSelected && (
+                <Transformer ref={trRef} boundBoxFunc={(oldBox, newBox) => (newBox.width < 5 || newBox.height < 5) ? oldBox : newBox} />
+            )}
+        </React.Fragment>
+    );
+};
 
 const ElementComponent = ({ shapeProps, isSelected, onSelect, onChange, onDoubleClick }) => {
     const shapeRef = useRef();
@@ -106,6 +162,7 @@ const CreatePage = () => {
     const [designName, setDesignName] = useState('Untitled Template');
     const [isElementsMenuOpen, setIsElementsMenuOpen] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Blank canvas init with undo/redo
     const [elements, setElements, undo, redo, canUndo, canRedo] = useHistory([]);
@@ -166,8 +223,100 @@ const CreatePage = () => {
         }]);
     };
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const dataUrl = evt.target.result;
+            const image = new window.Image();
+            image.onload = () => {
+                const maxW = 300;
+                const ratio = image.width / image.height;
+                const w = image.width > maxW ? maxW : image.width;
+                const h = w / ratio;
+                const isSvg = file.type === 'image/svg+xml' || file.name.endsWith('.svg');
+                setElements(prev => [...prev, {
+                    id: `image_${Date.now()}`, type: 'image', x: 100, y: 100,
+                    width: w, height: h, opacity: 1,
+                    src: dataUrl, fileName: file.name,
+                    imgFormat: isSvg ? 'svg' : 'png',
+                }]);
+            };
+            image.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
     const deleteSelected = () => {
         if (selectedId) { setElements(elements.filter(el => el.id !== selectedId)); selectShape(null); }
+    };
+
+    // Layer ordering functions
+    const bringToFront = () => {
+        if (!selectedId) return;
+        setElements(prev => {
+            const idx = prev.findIndex(el => el.id === selectedId);
+            if (idx < 0 || idx === prev.length - 1) return prev;
+            const copy = [...prev];
+            const [item] = copy.splice(idx, 1);
+            copy.push(item);
+            return copy;
+        });
+    };
+    const sendToBack = () => {
+        if (!selectedId) return;
+        setElements(prev => {
+            const idx = prev.findIndex(el => el.id === selectedId);
+            if (idx <= 0) return prev;
+            const copy = [...prev];
+            const [item] = copy.splice(idx, 1);
+            copy.unshift(item);
+            return copy;
+        });
+    };
+    const moveUp = () => {
+        if (!selectedId) return;
+        setElements(prev => {
+            const idx = prev.findIndex(el => el.id === selectedId);
+            if (idx < 0 || idx === prev.length - 1) return prev;
+            const copy = [...prev];
+            [copy[idx], copy[idx + 1]] = [copy[idx + 1], copy[idx]];
+            return copy;
+        });
+    };
+    const moveDown = () => {
+        if (!selectedId) return;
+        setElements(prev => {
+            const idx = prev.findIndex(el => el.id === selectedId);
+            if (idx <= 0) return prev;
+            const copy = [...prev];
+            [copy[idx], copy[idx - 1]] = [copy[idx - 1], copy[idx]];
+            return copy;
+        });
+    };
+
+    const getLayerLabel = (el) => {
+        if (el.type === 'text') return el.text.length > 14 ? el.text.slice(0, 14) + '...' : el.text;
+        if (el.type === 'image') return el.fileName || 'Image';
+        return el.type.charAt(0).toUpperCase() + el.type.slice(1);
+    };
+    const getLayerIcon = (type) => {
+        switch (type) {
+            case 'text': return 'T';
+            case 'rect': return '▮';
+            case 'circle': return '●';
+            case 'triangle': return '▲';
+            case 'star': return '★';
+            case 'pentagon': return '⬠';
+            case 'hexagon': return '⬡';
+            case 'diamond': return '◆';
+            case 'arrow': return '▸';
+            case 'line': return '—';
+            case 'image': return '🖼';
+            default: return '■';
+        }
     };
 
     const handleTextDoubleClick = (e, node) => {
@@ -244,6 +393,8 @@ const CreatePage = () => {
                 svg += `<polygon points="${el.x},${el.y - r} ${el.x + r},${el.y} ${el.x},${el.y + r} ${el.x - r},${el.y}" ${attrs} />`;
             } else if (el.type === 'arrow') {
                 svg += `<polygon points="${el.x - 20},${el.y - 15} ${el.x + 20},${el.y - 15} ${el.x + 20},${el.y - 25} ${el.x + 40},${el.y} ${el.x + 20},${el.y + 25} ${el.x + 20},${el.y + 15} ${el.x - 20},${el.y + 15}" ${attrs} />`;
+            } else if (el.type === 'image' && el.src) {
+                svg += `<image href="${el.src}" x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" opacity="${el.opacity != null ? el.opacity : 1}" />`;
             }
         });
         svg += `</svg>`;
@@ -323,10 +474,11 @@ const CreatePage = () => {
                         <span>Shapes</span>
                     </div>
 
-                    <div className="sidebar-item" onClick={() => setIsElementsMenuOpen(false)}>
+                    <div className="sidebar-item" onClick={() => { setIsElementsMenuOpen(false); fileInputRef.current && fileInputRef.current.click(); }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" /></svg>
                         <span>Uploads</span>
                     </div>
+                    <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/svg+xml,.svg" style={{ display: 'none' }} onChange={handleImageUpload} />
 
                     <div className="sidebar-divider" />
                     <div className="sidebar-section-label">Variables</div>
@@ -337,6 +489,19 @@ const CreatePage = () => {
                             <span>{v.key}</span>
                         </div>
                     ))}
+
+                    <div className="sidebar-divider" />
+                    <div className="sidebar-section-label">Layers</div>
+                    <div className="layers-list">
+                        {elements.length === 0 && <div className="layers-empty">No elements</div>}
+                        {[...elements].reverse().map((el, ri) => (
+                            <div key={el.id} className={`layer-item ${el.id === selectedId ? 'active' : ''}`} onClick={() => selectShape(el.id)}>
+                                <span className="layer-icon">{getLayerIcon(el.type)}</span>
+                                <span className="layer-name">{getLayerLabel(el)}</span>
+                                <span className="layer-index">{elements.length - ri}</span>
+                            </div>
+                        ))}
+                    </div>
                 </aside>
 
                 {/* Shapes Popup */}
@@ -378,11 +543,18 @@ const CreatePage = () => {
                             <Layer>
                                 <Rect x={0} y={0} id="bg" width={stageWidth} height={stageHeight} fill="#ffffff" cornerRadius={10} shadowColor="#000" shadowBlur={10} shadowOpacity={0.1} shadowOffsetY={4} />
                                 {elements.map((el, i) => (
-                                    <ElementComponent key={el.id} shapeProps={el} isSelected={el.id === selectedId}
-                                        onSelect={() => selectShape(el.id)}
-                                        onChange={(newAttrs) => { const copy = elements.slice(); copy[i] = newAttrs; setElements(copy); }}
-                                        onDoubleClick={handleTextDoubleClick}
-                                    />
+                                    el.type === 'image' ? (
+                                        <ImageElement key={el.id} src={el.src} shapeProps={el} isSelected={el.id === selectedId}
+                                            onSelect={() => selectShape(el.id)}
+                                            onChange={(newAttrs) => { const copy = elements.slice(); copy[i] = newAttrs; setElements(copy); }}
+                                        />
+                                    ) : (
+                                        <ElementComponent key={el.id} shapeProps={el} isSelected={el.id === selectedId}
+                                            onSelect={() => selectShape(el.id)}
+                                            onChange={(newAttrs) => { const copy = elements.slice(); copy[i] = newAttrs; setElements(copy); }}
+                                            onDoubleClick={handleTextDoubleClick}
+                                        />
+                                    )
                                 ))}
                             </Layer>
                         </Stage>
@@ -413,8 +585,28 @@ const CreatePage = () => {
 
                     {sel ? (
                         <>
-                            {/* Fill Toggle — for shapes only (not text or line) */}
-                            {sel.type !== 'text' && sel.type !== 'line' && (
+                            {/* Image-specific properties */}
+                            {sel.type === 'image' && (
+                                <>
+                                    <div className="prop-row">
+                                        <div className="prop-label">File</div>
+                                        <div style={{ fontSize: 12, color: '#374151', wordBreak: 'break-all' }}>{sel.fileName || 'Uploaded image'}</div>
+                                    </div>
+                                    <div className="prop-row">
+                                        <div className="prop-label">Format</div>
+                                        <span className="img-format-badge">{(sel.imgFormat || 'png').toUpperCase()}</span>
+                                    </div>
+                                    <div className="prop-row">
+                                        <div className="prop-label">Size</div>
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                            <input type="number" className="prop-number" style={{ width: '50%' }} value={Math.round(sel.width)} onChange={(e) => handlePropertyChange('width', parseInt(e.target.value) || 10)} placeholder="W" />
+                                            <input type="number" className="prop-number" style={{ width: '50%' }} value={Math.round(sel.height)} onChange={(e) => handlePropertyChange('height', parseInt(e.target.value) || 10)} placeholder="H" />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            {/* Fill Toggle — for shapes only (not text, line, or image) */}
+                            {sel.type !== 'text' && sel.type !== 'line' && sel.type !== 'image' && (
                                 <div className="prop-row">
                                     <div className="prop-label">Style</div>
                                     <div className="align-group">
@@ -423,16 +615,18 @@ const CreatePage = () => {
                                     </div>
                                 </div>
                             )}
-                            {/* Color */}
-                            <div className="prop-row">
-                                <div className="prop-label">{sel.filled === false ? 'Stroke Color' : 'Color'}</div>
-                                <div className="prop-row-inline" style={{ padding: 0 }}>
-                                    <input type="color" className="color-picker" value={sel.fill} onChange={(e) => handlePropertyChange('fill', e.target.value)} />
-                                    <input className="color-hex" style={{ width: '67.6px' }} value={sel.fill} onChange={(e) => handlePropertyChange('fill', e.target.value)} />
+                            {/* Color — not for images */}
+                            {sel.type !== 'image' && (
+                                <div className="prop-row">
+                                    <div className="prop-label">{sel.filled === false ? 'Stroke Color' : 'Color'}</div>
+                                    <div className="prop-row-inline" style={{ padding: 0 }}>
+                                        <input type="color" className="color-picker" value={sel.fill} onChange={(e) => handlePropertyChange('fill', e.target.value)} />
+                                        <input className="color-hex" style={{ width: '67.6px' }} value={sel.fill} onChange={(e) => handlePropertyChange('fill', e.target.value)} />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             {/* Stroke Width — for outline shapes */}
-                            {sel.filled === false && (
+                            {sel.filled === false && sel.type !== 'image' && (
                                 <div className="prop-row">
                                     <div className="prop-label">Stroke Width</div>
                                     <input type="number" className="prop-number" min="1" max="20" value={sel.strokeWidth || 2} onChange={(e) => handlePropertyChange('strokeWidth', parseInt(e.target.value) || 2)} />
@@ -483,6 +677,24 @@ const CreatePage = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <input type="range" min="0" max="1" step="0.05" className="opacity-slider" value={sel.opacity != null ? sel.opacity : 1} onChange={(e) => handlePropertyChange('opacity', parseFloat(e.target.value))} />
                                     <span style={{ fontSize: 12, color: '#6B7280', minWidth: 32 }}>{Math.round((sel.opacity != null ? sel.opacity : 1) * 100)}%</span>
+                                </div>
+                            </div>
+                            <div className="prop-divider" />
+                            <div className="prop-row">
+                                <div className="prop-label">Layer Order</div>
+                                <div className="layer-controls">
+                                    <button className="layer-ctrl-btn" onClick={sendToBack} title="Send to Back">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 18l5 5 5-5" /><path d="M12 23V7" /><path d="M3 3h18" /></svg>
+                                    </button>
+                                    <button className="layer-ctrl-btn" onClick={moveDown} title="Move Down">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 13l5 5 5-5" /><path d="M12 18V2" /></svg>
+                                    </button>
+                                    <button className="layer-ctrl-btn" onClick={moveUp} title="Move Up">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 11l-5-5-5 5" /><path d="M12 6v16" /></svg>
+                                    </button>
+                                    <button className="layer-ctrl-btn" onClick={bringToFront} title="Bring to Front">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 6l-5-5-5 5" /><path d="M12 1v16" /><path d="M3 21h18" /></svg>
+                                    </button>
                                 </div>
                             </div>
                             <div className="prop-divider" />
