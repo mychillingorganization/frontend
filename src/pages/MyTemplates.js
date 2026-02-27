@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './MyTemplates.css';
+import { useNavigate } from 'react-router-dom'; 
+
 
 // Dữ liệu mẫu hiển thị danh sách các Template
 const templatesData =[
@@ -11,6 +13,7 @@ const templatesData =[
 ];
 
 const MyTemplates = () => {
+    const navigate = useNavigate(); 
   const [activeMenu, setActiveMenu] = useState(null);
 
   // Xử lý bật/tắt menu (Edit, Duplicate, Delete)
@@ -61,7 +64,7 @@ const MyTemplates = () => {
               <input type="text" placeholder="Search templates..." />
             </div>
             
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={() => navigate('/create')}>
               <svg width="20" height="20" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4.58936 11.014H17.439" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"></path>
                 <path d="M11.0142 4.58916V17.4388" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -102,7 +105,10 @@ const MyTemplates = () => {
                   {/* Dropdown Menu */}
                   {activeMenu === template.id && (
                     <div className="dropdown-menu">
-                      <button className="dropdown-item">
+                      <button 
+                        className="dropdown-item"
+                        onClick={() => navigate(`/create?id=${template.id}`)}
+                      >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         Edit
                       </button>

@@ -15,7 +15,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/create" element={<CreatePage />} />
-        <Route path="/mytemplate" element={<MyTemplates />} />
+        <Route path="/templates" element={<MyTemplates />} />
       </Routes>
     </Router>
   );
