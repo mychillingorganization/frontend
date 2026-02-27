@@ -46,6 +46,47 @@ const ProfilePage = () => {
         navigate('/');
     };
 
+    const handleDeleteAccount = async () => {
+        if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+
+            // --- BACKEND INTEGRATION PLACEHOLDER ---
+            /*
+            try {
+                // Example API endpoint to delete user account
+                const response = await fetch('https://api.bugkathon.com/users/delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${user.token}` // Or your preferred auth header
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("Failed to delete account on the server.");
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                setMessage({ type: 'error', text: 'Failed to delete account from server.' });
+                return;
+            }
+            */
+            // ---------------------------------------
+
+            // Remove from mock_users
+            const mockUsersStr = localStorage.getItem('mock_users');
+            if (mockUsersStr) {
+                try {
+                    let mockUsers = JSON.parse(mockUsersStr);
+                    mockUsers = mockUsers.filter(u => u.email !== user.email);
+                    localStorage.setItem('mock_users', JSON.stringify(mockUsers));
+                } catch (e) {
+                    console.error('Error updating mock_users:', e);
+                }
+            }
+
+            // Sign out
+            handleSignOut();
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setUser((prev) => ({ ...prev, [name]: value }));
@@ -184,9 +225,14 @@ const ProfilePage = () => {
                             <button type="button" className="btn-signout" onClick={handleSignOut}>
                                 Sign Out
                             </button>
-                            <button type="submit" className="btn-save-profile">
-                                Save Changes
-                            </button>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button type="button" className="btn-delete-account" onClick={handleDeleteAccount}>
+                                    Delete Account
+                                </button>
+                                <button type="submit" className="btn-save-profile">
+                                    Save Changes
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

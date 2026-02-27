@@ -165,6 +165,23 @@
     background: #FCE8E6;
 }
 
+.btn-delete-account {
+    height: 44px;
+    padding: 0 24px;
+    border: none;
+    border-radius: 8px;
+    background: #EA4335;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete-account:hover {
+    background: #C5221F;
+}
+
 .btn-save-profile {
     height: 44px;
     padding: 0 32px;
