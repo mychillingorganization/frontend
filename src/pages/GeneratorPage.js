@@ -98,6 +98,60 @@ const GeneratorPage = () => {
         e.target.value = ''; // Reset input
     };
 
+    const handleFetchFromGoogleSheets = () => {
+        if (!sheetsUrl || !sheetsUrl.includes('docs.google.com/spreadsheets/d/')) {
+            addLog('Error: Please enter a valid Google Sheets link.');
+            return;
+        }
+
+        try {
+            // Extract the Sheet ID from the URL
+            const matches = sheetsUrl.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (!matches || matches.length < 2) {
+                addLog('Error: Invalid Google Sheets URL format.');
+                return;
+            }
+
+            const sheetId = matches[1];
+            // Construct the CSV export URL
+            const csvExportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+
+            addLog('Fetching data from Google Sheets...');
+
+            Papa.parse(csvExportUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    if (results.data && results.data.length > 0) {
+                        const columns = Object.keys(results.data[0]);
+                        setSheetColumns(columns);
+                        setSheetData(results.data);
+
+                        // Auto-map if column names match template variables exactly
+                        const autoMap = {};
+                        (selectedTemplate?.variables || TEMPLATE_VARIABLES).forEach(v => {
+                            const match = columns.find(c => c.toLowerCase().includes(v.toLowerCase()));
+                            if (match) autoMap[v] = match;
+                        });
+                        setMappings(autoMap);
+
+                        setPreviewRowIndex(0);
+                        addLog(`Successfully loaded ${results.data.length} records from Google Sheets.`);
+                    } else {
+                        addLog('Error: Google Sheet is empty or could not be parsed.');
+                    }
+                },
+                error: (err) => {
+                    addLog(`Fetch Error: Make sure the Google Sheet is set to "Anyone with the link can view".`);
+                    console.error('Papa Parse Error:', err);
+                }
+            });
+        } catch (error) {
+            addLog(`Error parsing URL: ${error.message}`);
+        }
+    };
+
     const handleMappingChange = (variable, column) => {
         setMappings(prev => ({ ...prev, [variable]: column }));
     };
@@ -133,11 +187,20 @@ const GeneratorPage = () => {
 
                 // Safe filename extraction
                 const rowData = sheetData[i];
-                let fileName = `certificate_${i + 1}.pdf`;
-                // Try to find a name column to use as filename
-                const nameCol = Object.keys(mappings).find(k => k.toLowerCase().includes('name'));
-                if (nameCol && mappings[nameCol] && rowData[mappings[nameCol]]) {
-                    fileName = `${rowData[mappings[nameCol]].trim().replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                let fileName = `${i + 1}.pdf`;
+                // Try to find an ID or Name column in the dataset to use as filename
+                const idKey = Object.keys(rowData).find(k => k.toLowerCase() === 'id' || k.toLowerCase().includes('id'));
+                const nameKey = Object.keys(rowData).find(k => k.toLowerCase() === 'name' || k.toLowerCase().includes('name'));
+
+                const idValue = idKey ? String(rowData[idKey]).trim() : '';
+                const nameValue = nameKey ? String(rowData[nameKey]).trim() : '';
+
+                if (idValue || nameValue) {
+                    let combined = [idValue, nameValue].filter(Boolean).join('_');
+                    // Normalize accents (e.g. Vietnamese) to base ASCII characters
+                    combined = combined.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+                    // Replace spaces and remaining unsupported characters with underscores
+                    fileName = `${combined.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
                 }
 
                 zip.file(fileName, pdfBlob);
@@ -186,13 +249,36 @@ const GeneratorPage = () => {
                         {/* DATA SOURCE */}
                         <div className="gen-card">
                             <div className="gen-card-title">DATA SOURCE</div>
-                            <div className="card-top-action">
+
+                            {/* Option 1: Google Sheets URL */}
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#5F6368', marginBottom: '8px', display: 'block' }}>Option 1: Google Sheets Link</label>
                                 <div className="url-input-wrap">
-                                    <div className="url-icon"></div>
-                                    <input type="text" className="url-input" placeholder="A local CSV file allows real test rendering!" value={sheetsUrl} onChange={e => setSheetsUrl(e.target.value)} disabled />
+                                    <div className="url-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#99A1AF" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="url-input"
+                                        placeholder="Paste a public Google Sheets link..."
+                                        value={sheetsUrl}
+                                        onChange={e => setSheetsUrl(e.target.value)}
+                                    />
                                 </div>
-                                <button className="btn-primary" onClick={() => csvInputRef.current?.click()}>
-                                    Upload CSV Data
+                                <button className="btn-primary" style={{ width: '100%', marginTop: '8px', background: '#34A853' }} onClick={handleFetchFromGoogleSheets}>
+                                    Fetch from Google Sheets
+                                </button>
+                                <p style={{ fontSize: '11px', color: '#99A1AF', marginTop: '4px' }}>* Ensure link sharing is set to "Anyone with the link can view".</p>
+                            </div>
+
+                            <div style={{ width: '100%', height: '1px', background: '#E8EAED', margin: '20px 0' }}></div>
+
+                            {/* Option 2: CSV Upload */}
+                            <div>
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#5F6368', marginBottom: '8px', display: 'block' }}>Option 2: Upload CSV File</label>
+                                <button className="btn-primary" style={{ width: '100%' }} onClick={() => csvInputRef.current?.click()}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    Upload Local CSV
                                 </button>
                                 <input
                                     type="file"
