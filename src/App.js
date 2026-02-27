@@ -7,6 +7,8 @@ import CreatePage from './pages/CreatePage'; // added CreatePage
 import GeneratorPage from './pages/GeneratorPage';
 import './App.css';
 import MyTemplates from './pages/MyTemplates';
+import ProfilePage from './pages/ProfilePage';
+import AuthRoute from './components/AuthRoute';
 
 function App() {
   return (
@@ -15,9 +17,10 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/create" element={<CreatePage />} />
-        <Route path="/generator" element={<GeneratorPage />} />
-        <Route path="/templates" element={<MyTemplates />} />
+        <Route path="/create" element={<AuthRoute><CreatePage /></AuthRoute>} />
+        <Route path="/generator" element={<AuthRoute><GeneratorPage /></AuthRoute>} />
+        <Route path="/templates" element={<AuthRoute><MyTemplates /></AuthRoute>} />
+        <Route path="/profile" element={<AuthRoute><ProfilePage /></AuthRoute>} />
       </Routes>
     </Router>
   );

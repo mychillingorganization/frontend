@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import ProfileIcon from './ProfileIcon';
 import './Navbar.css';
 
 function Navbar() {
     const location = useLocation();
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const stored = localStorage.getItem('current_user');
+        if (stored) {
+            try {
+                setUser(JSON.parse(stored));
+            } catch (e) { }
+        }
+    }, []);
 
     return (
         <nav className="navbar">
@@ -22,8 +33,14 @@ function Navbar() {
                 </Link>
             </div>
             <div className="navbar-right">
-                <Link to="/login" className="btn btn-ghost">Sign In</Link>
-                <Link to="/register" className="btn btn-primary">Register</Link>
+                {user ? (
+                    <ProfileIcon />
+                ) : (
+                    <>
+                        <Link to="/login" className="btn btn-ghost">Sign In</Link>
+                        <Link to="/register" className="btn btn-primary" style={{ height: "33.6px" }}>Register</Link>
+                    </>
+                )}
             </div>
         </nav>
     );

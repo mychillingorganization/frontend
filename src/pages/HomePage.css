@@ -58,4 +58,9 @@
     padding: 10px 28px;
     font-size: 14px;
     border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 42px;
 }

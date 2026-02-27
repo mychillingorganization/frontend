@@ -1,18 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Stage, Layer, Rect, Text, Transformer, Circle, RegularPolygon, Star, Line as KonvaLine, Image as KonvaImage } from 'react-konva';
+import useImage from 'use-image';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, DEFAULT_TEMPLATE_VARIABLES, STORAGE_KEYS } from '../constants';
 import './CreatePage.css';
 
-// ImageElement: Loads an image from a data URI and renders it on the Konva canvas
-const ImageElement = ({ src, shapeProps, isSelected, onSelect, onChange }) => {
+// Custom Image Component to handle useImage hook cleanly inside the Konva Stage
+const URLImage = ({ shapeProps, isSelected, onSelect, onChange, common }) => {
+    const [image] = useImage(shapeProps.src);
     const shapeRef = useRef();
     const trRef = useRef();
-    const [img, setImg] = useState(null);
-
-    useEffect(() => {
-        const image = new window.Image();
-        image.src = src;
-        image.onload = () => setImg(image);
-    }, [src]);
 
     useEffect(() => {
         if (isSelected && trRef.current && shapeRef.current) {
@@ -21,21 +18,17 @@ const ImageElement = ({ src, shapeProps, isSelected, onSelect, onChange }) => {
         }
     }, [isSelected]);
 
-    if (!img) return null;
-
     return (
         <React.Fragment>
             <KonvaImage
-                image={img}
+                {...common}
+                image={image}
                 x={shapeProps.x}
                 y={shapeProps.y}
                 width={shapeProps.width}
                 height={shapeProps.height}
                 opacity={shapeProps.opacity != null ? shapeProps.opacity : 1}
                 ref={shapeRef}
-                onClick={onSelect}
-                onTap={onSelect}
-                draggable
                 onDragEnd={(e) => onChange({ ...shapeProps, x: e.target.x(), y: e.target.y() })}
                 onTransformEnd={() => {
                     const node = shapeRef.current;
@@ -63,7 +56,7 @@ const ElementComponent = ({ shapeProps, isSelected, onSelect, onChange, onDouble
     const trRef = useRef();
 
     useEffect(() => {
-        if (isSelected) {
+        if (isSelected && trRef.current && shapeRef.current) {
             trRef.current.nodes([shapeRef.current]);
             trRef.current.getLayer().batchDraw();
         }
@@ -116,6 +109,7 @@ const ElementComponent = ({ shapeProps, isSelected, onSelect, onChange, onDouble
             case 'diamond': return <KonvaLine closed points={[0, -(shapeProps.radius || 50), (shapeProps.radius || 50), 0, 0, (shapeProps.radius || 50), -(shapeProps.radius || 50), 0]} {...common} {...p} x={shapeProps.x} y={shapeProps.y} />;
             case 'arrow': return <KonvaLine closed points={[-20, -15, 20, -15, 20, -25, 40, 0, 20, 25, 20, 15, -20, 15]} {...common} {...p} x={shapeProps.x} y={shapeProps.y} scaleX={shapeProps.scaleVal || 1} scaleY={shapeProps.scaleVal || 1} />;
             case 'line': return <Rect {...common} {...p} cornerRadius={shapeProps.height / 2} />;
+            case 'image': return <URLImage shapeProps={shapeProps} common={common} isSelected={isSelected} onSelect={onSelect} onChange={onChange} />;
             default: return null;
         }
     };
@@ -123,7 +117,7 @@ const ElementComponent = ({ shapeProps, isSelected, onSelect, onChange, onDouble
     return (
         <React.Fragment>
             {renderShape()}
-            {isSelected && (
+            {isSelected && shapeProps.type !== 'image' && ( // Image transformer is handled within URLImage
                 <Transformer ref={trRef} boundBoxFunc={(oldBox, newBox) => (newBox.width < 5 || newBox.height < 5) ? oldBox : newBox} />
             )}
         </React.Fragment>
@@ -148,18 +142,15 @@ const useHistory = (initialState) => {
     return [history[step], setState, undo, redo, step > 0, step < history.length - 1];
 };
 
-const TEMPLATE_VARS = [
-    { key: 'name', label: '{} name' },
-    { key: 'role', label: '{} role' },
-    { key: 'event_name', label: '{} event_name' },
-];
-
 const CreatePage = () => {
-    const stageWidth = 800;
-    const stageHeight = 500;
+    const navigate = useNavigate();
+    const location = useLocation();
+    const stageWidth = CANVAS_WIDTH;
+    const stageHeight = CANVAS_HEIGHT;
     const stageRef = useRef();
 
     const [designName, setDesignName] = useState('Untitled Template');
+    const [templateVars, setTemplateVars] = useState(DEFAULT_TEMPLATE_VARIABLES);
     const [isElementsMenuOpen, setIsElementsMenuOpen] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const fileInputRef = useRef(null);
@@ -168,6 +159,61 @@ const CreatePage = () => {
     const [elements, setElements, undo, redo, canUndo, canRedo] = useHistory([]);
     const [selectedId, selectShape] = useState(null);
     const [editingTextNode, setEditingTextNode] = useState(null);
+
+    const queryParams = new URLSearchParams(location.search);
+    const templateId = queryParams.get('id');
+
+    const [loadedId, setLoadedId] = useState(null);
+
+    useEffect(() => {
+        if (templateId && templateId !== loadedId) {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
+                if (stored && stored !== '[]') {
+                    const templates = JSON.parse(stored);
+                    const t = templates.find(temp => temp.id === Number(templateId));
+                    if (t) {
+                        setDesignName(t.title);
+                        if (t.elements && t.elements.length > 0) {
+                            setElements(t.elements);
+                        }
+                        if (t.variables) {
+                            setTemplateVars(t.variables);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading template:', error);
+                alert('Failed to load template. Please try again.');
+            }
+            setLoadedId(templateId);
+        }
+    }, [templateId, loadedId, setElements]);
+
+    const handleSave = () => {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
+            let templates = stored && stored !== '[]' ? JSON.parse(stored) : [];
+            if (templateId) {
+                templates = templates.map(t => t.id === Number(templateId) ? { ...t, title: designName, elements, variables: templateVars, lastEdited: 'Just now' } : t);
+            } else {
+                const newTpl = {
+                    id: Date.now(),
+                    title: designName,
+                    lastEdited: 'Just now',
+                    elements,
+                    variables: templateVars
+                };
+                templates = [newTpl, ...templates];
+                navigate(`/create?id=${newTpl.id}`, { replace: true });
+            }
+            localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
+            alert('Template saved successfully!');
+        } catch (error) {
+            console.error('Error saving template:', error);
+            alert('Failed to save template. Please try again.');
+        }
+    };
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -236,17 +282,20 @@ const CreatePage = () => {
                 const w = image.width > maxW ? maxW : image.width;
                 const h = w / ratio;
                 const isSvg = file.type === 'image/svg+xml' || file.name.endsWith('.svg');
-                setElements(prev => [...prev, {
+                const newImage = {
                     id: `image_${Date.now()}`, type: 'image', x: 100, y: 100,
                     width: w, height: h, opacity: 1,
                     src: dataUrl, fileName: file.name,
                     imgFormat: isSvg ? 'svg' : 'png',
-                }]);
+                };
+                setElements(prev => [...prev, newImage]);
+                selectShape(newImage.id);
             };
             image.src = dataUrl;
         };
         reader.readAsDataURL(file);
         e.target.value = '';
+        setIsElementsMenuOpen(false);
     };
 
     const deleteSelected = () => {
@@ -343,6 +392,16 @@ const CreatePage = () => {
         setElements(elements.map(el => el.id === selectedId ? { ...el, [property]: value } : el));
     };
 
+    const escapeSvgText = (value) => {
+        if (value == null) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    };
+
     const downloadImage = (format) => {
         const fileName = `${designName.replace(/\s+/g, '-').toLowerCase() || 'design'}.${format}`;
         if (format === 'png') {
@@ -370,7 +429,7 @@ const CreatePage = () => {
             else if (el.type === 'text') {
                 const anchor = el.align === 'center' ? 'middle' : el.align === 'right' ? 'end' : 'start';
                 let sx = el.x; if (el.align === 'center') sx += (el.width / 2); if (el.align === 'right') sx += el.width;
-                svg += `<text x="${sx}" y="${el.y + el.fontSize * 0.8}" font-family="${el.fontFamily || 'sans-serif'}" font-size="${el.fontSize}px" fill="${el.fill}" text-anchor="${anchor}">${el.text}</text>`;
+                svg += `<text x="${sx}" y="${el.y + el.fontSize * 0.8}" font-family="${el.fontFamily || 'sans-serif'}" font-size="${el.fontSize}px" fill="${el.fill}" text-anchor="${anchor}">${escapeSvgText(el.text)}</text>`;
             } else if (el.type === 'circle') svg += `<circle cx="${el.x}" cy="${el.y}" r="${el.radius}" ${attrs} />`;
             else if (el.type === 'triangle' || el.type === 'pentagon' || el.type === 'hexagon') {
                 const sides = el.type === 'triangle' ? 3 : el.type === 'pentagon' ? 5 : 6;
@@ -412,7 +471,7 @@ const CreatePage = () => {
             {/* ===== TOPBAR ===== */}
             <header className="create-topbar">
                 <div className="topbar-left">
-                    <button className="icon-btn" onClick={() => window.location.href = '/templates'}>
+                    <button className="icon-btn" onClick={() => navigate('/templates')}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18L9 12L15 6" /></svg>
                     </button>
                     <span className="back-label">Back to My Templates</span>
@@ -454,7 +513,7 @@ const CreatePage = () => {
                             </div>
                         )}
                     </div>
-                    <button className="action-btn primary" onClick={() => alert('Template saved!')}>Save Template</button>
+                    <button className="action-btn primary" onClick={handleSave}>Save Template</button>
                 </div>
             </header>
 
@@ -481,12 +540,32 @@ const CreatePage = () => {
                     <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/svg+xml,.svg" style={{ display: 'none' }} onChange={handleImageUpload} />
 
                     <div className="sidebar-divider" />
-                    <div className="sidebar-section-label">Variables</div>
+                    <div className="sidebar-section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        Variables
+                        <button
+                            style={{ background: 'none', border: 'none', color: '#1A73E8', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}
+                            onClick={() => {
+                                const newVar = window.prompt("Enter new variable name (e.g. date, award_title):");
+                                if (newVar && newVar.trim() !== '' && !templateVars.includes(newVar.trim())) {
+                                    setTemplateVars([...templateVars, newVar.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_')]);
+                                }
+                            }}
+                        >+ Add</button>
+                    </div>
 
-                    {TEMPLATE_VARS.map(v => (
-                        <div key={v.key} className="var-pill" onClick={() => addVariable(v.key)}>
-                            <span className="var-pill-icon">{'{}'}</span>
-                            <span>{v.key}</span>
+                    {templateVars.map(v => (
+                        <div key={v} className="var-pill">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }} onClick={() => addVariable(v)}>
+                                <span className="var-pill-icon">{'{}'}</span>
+                                <span>{v}</span>
+                            </div>
+                            <span
+                                style={{ marginLeft: 'auto', color: '#9CA3AF', cursor: 'pointer', padding: '0 4px', fontSize: '14px', lineHeight: 1 }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setTemplateVars(templateVars.filter(tv => tv !== v));
+                                }}
+                            >&times;</span>
                         </div>
                     ))}
 
@@ -533,6 +612,17 @@ const CreatePage = () => {
                         <div className="shapes-grid">
                             <div className="shape-btn" onClick={() => addShape('line', true)} title="Line"><div className="shape-icon-line" /></div>
                         </div>
+                        <div className="elements-divider" style={{ margin: '16px 0', borderTop: '1px solid #E8EAED' }}></div>
+                        <button
+                            className="btn-upload-image"
+                            style={{ width: '100%', padding: '10px', background: '#F8F9FA', border: '1px dashed #DADCE0', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#1A73E8', fontWeight: 500, transition: 'background 0.2s' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#F1F3F4'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#F8F9FA'}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                            Upload Image
+                        </button>
                     </div>
                 )}
 
@@ -543,18 +633,11 @@ const CreatePage = () => {
                             <Layer>
                                 <Rect x={0} y={0} id="bg" width={stageWidth} height={stageHeight} fill="#ffffff" cornerRadius={10} shadowColor="#000" shadowBlur={10} shadowOpacity={0.1} shadowOffsetY={4} />
                                 {elements.map((el, i) => (
-                                    el.type === 'image' ? (
-                                        <ImageElement key={el.id} src={el.src} shapeProps={el} isSelected={el.id === selectedId}
-                                            onSelect={() => selectShape(el.id)}
-                                            onChange={(newAttrs) => { const copy = elements.slice(); copy[i] = newAttrs; setElements(copy); }}
-                                        />
-                                    ) : (
-                                        <ElementComponent key={el.id} shapeProps={el} isSelected={el.id === selectedId}
-                                            onSelect={() => selectShape(el.id)}
-                                            onChange={(newAttrs) => { const copy = elements.slice(); copy[i] = newAttrs; setElements(copy); }}
-                                            onDoubleClick={handleTextDoubleClick}
-                                        />
-                                    )
+                                    <ElementComponent key={el.id} shapeProps={el} isSelected={el.id === selectedId}
+                                        onSelect={() => selectShape(el.id)}
+                                        onChange={(newAttrs) => { const copy = elements.slice(); copy[i] = newAttrs; setElements(copy); }}
+                                        onDoubleClick={handleTextDoubleClick}
+                                    />
                                 ))}
                             </Layer>
                         </Stage>
