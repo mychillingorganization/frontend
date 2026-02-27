@@ -10,7 +10,7 @@ function HomePage() {
                 {/* Logo icon */}
                 <div className="home-logo-section">
                     <div className="home-logo-icon">
-                        <img src="/assets/bugkathon_logo.svg" alt="Bugkathon Logo" style={{width: "100%", height: "100%"}} className="bugkathon-logo" />
+                        <img src="/assets/bugkathon_logo.svg" alt="Bugkathon Logo" style={{ width: "100%", height: "100%" }} className="bugkathon-logo" />
                     </div>
                 </div>
                 {/* Hero */}
