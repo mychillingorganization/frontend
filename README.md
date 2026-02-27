@@ -1,70 +1,72 @@
-# Getting Started with Create React App
+# Bugkathon - Dynamic SVG Certificate & Asset Generator
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Bugkathon is a powerful, React-based web application designed for creating, managing, and bulk-generating digital certificates and graphic assets. This frontend module runs entirely in the browser using `localStorage` and `Konva.js`, allowing users to design templates, map dynamic variables, upload datasets, and generate `.zip` archives of PDFs.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+### 1. Advanced Template Editor (Canva-like Experience)
+- **Interactive Canvas:** Built heavily on `react-konva`. Drag, drop, scale, and rotate design elements freely.
+- **Rich Elements:** Add dynamic Text blocks, specific Shapes (Rectangles, Circles, Triangles, Stars, Lines), and upload custom local Images.
+- **Design Configuration:** Edit precise parameters in real-time including X/Y coordinates, scale, Font Family, Font Size, Alignment, and Hex/RGBA Colors.
+- **Dynamic Variables:** Inject placeholders like `{{name}}` or `{{role}}` directly into text layers. Any defined `{{variable}}` string will instantly become a mapped column during dataset generation!
+- **Undo/Redo System:** Built-in history state management allows for completely reversible design actions.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 2. Template Management
+- **Persistent Storage:** Your custom templates are securely saved into your browser's local sandbox, persisting across sessions.
+- **My Templates Library:** Browse your designs, duplicate existing layouts as starting points, or delete old ones.
+- **Pre-loaded Designs:** Comes injected with 3 fully-functional, pre-made template examples out of the box.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 3. Bulk PDF & CSV Generation
+- **Local CSV Parsing:** Upload a real `.csv` file directly into the browser. The system leverages `papaparse` to extract all table data instantly without needing a backend server.
+- **Live Preview:** As you map your template to your CSV, the generator provides a live updating Konva canvas showing exactly how the final render will look for the first row of your dataset.
+- **Batch Exporting Engine:** 
+  - Iterates silently through your entire CSV dataset using a hidden, off-screen Konva stage.
+  - Replaces all dynamic text layers with personalized data.
+  - Converts every document natively into high-resolution PDFs using `jspdf`.
+  - Packages the resultant files into a `.zip` archive using `jszip` and triggers a single, frictionless browser download.
 
-### `npm test`
+---
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Tech Stack & Dependencies
 
-### `npm run build`
+- **Framework:** React.js (Create React App)
+- **Routing:** `react-router-dom` v6
+- **Canvas Rendering:** `konva`, `react-konva`, `use-image`
+- **PDF & Export Engine:** `jspdf`, `jszip`, `file-saver`
+- **Data Parsing:** `papaparse`
+- **HTTP Client (Future Preparation):** `axios`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 💻 Running the Application Locally
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. **Clone the repository** and navigate to the `frontend` folder.
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+3. **Start the Development Server:**
+   ```bash
+   npm start
+   ```
+4. **Access the App:** Open `http://localhost:3000` in your browser.
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 🗄️ Backend Integration Setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Right now, this frontend acts as an independent prototype simulating authentication, sessions, and databases inside `localStorage`. 
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+**This frontend is pre-configured and ready to be hooked into a real backend.**
+Inside `src/config/api.js`, you will find an intricate Axios configuration containing:
+- JWT Authorization Header interceptors.
+- Global 401 token-expiry interceptors.
+- Pre-built Placeholder API export services (e.g., `TemplatesAPI.create()`).
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+**To integrate:**
+1. Supply your backend server address into the `.env` file via `REACT_APP_API_URL`.
+2. Swap the `localStorage` mocking loops inside `ProfilePage.js` and `CreatePage.js` with the corresponding `api.js` endpoint functions.
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+> For an in-depth checklist on migrating to a Node/Python backend, check the comments inside `src/config/api.js`.
