@@ -138,10 +138,30 @@ body {
   opacity: 0.9;
 }
 
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: transparent;
+  color: #EA4335;
+  border: 1px solid #EA4335;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ghost:hover {
+  background-color: #FCE8E6;
+}
+
 /* --- Grid & Cards --- */
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Tự động chia 3 cột đều nhau */
+  grid-template-columns: repeat(3, 1fr);
+  /* Tự động chia 3 cột đều nhau */
   gap: 30px;
 }
 
@@ -156,14 +176,16 @@ body {
 .template-card {
   background: var(--bg-white);
   border-radius: 12px;
-  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.08); /* Bóng mờ nhẹ theo thiết kế */
-  overflow: visible; 
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.08);
+  /* Bóng mờ nhẹ theo thiết kế */
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
 
 .card-preview {
-  background-color: var(--bg-card); /* Màu nền xám nhạt như hình */
+  background-color: var(--bg-card);
+  /* Màu nền xám nhạt như hình */
   height: 200px;
   display: flex;
   justify-content: center;
