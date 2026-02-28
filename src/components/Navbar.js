@@ -38,7 +38,7 @@ function Navbar() {
                 ) : (
                     <>
                         <Link to="/login" className="btn btn-ghost">Sign In</Link>
-                        <Link to="/register" className="btn btn-primary" style={{ height: "33.6px" }}>Register</Link>
+                        <Link to="/register" className="btn btn-primary">Register</Link>
                     </>
                 )}
             </div>
