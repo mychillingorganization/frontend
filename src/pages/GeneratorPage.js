@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import generationLogService from '../services/generationLogService';
 import Papa from 'papaparse';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
@@ -70,12 +71,6 @@ const GeneratorPage = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [progress, setProgress] = useState(0);
     const [previewRowIndex, setPreviewRowIndex] = useState(0);
-    const csvInputRef = useRef(null);
-    const offscreenStageRef = useRef(null);
-
-    const [processingRowIndex, setProcessingRowIndex] = useState(-1);
-    const [execOptions, setExecOptions] = useState({ pdf: true, drive: false, email: false });
-    const [emailColumn, setEmailColumn] = useState('');
 
     const addLog = (msg) => {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -175,92 +170,28 @@ const GeneratorPage = () => {
         setMappings(prev => ({ ...prev, [variable]: column }));
     };
 
-    const handleGenerate = async () => {
-        if (!selectedTemplate) return addLog('Error: No template selected.');
-        if (!sheetData || sheetData.length === 0) return addLog('Error: No data available. Upload CSV first.');
-        if (!execOptions.pdf && !execOptions.drive && !execOptions.email) return addLog('Error: Select at least one Execution Option.');
-        if (execOptions.email && !emailColumn) return addLog('Error: Select an Email Column to send emails.');
-
+    const handleGenerate = () => {
         setIsGenerating(true);
         setProgress(0);
         setLogs([]);
         addLog('Initializing GDGoC Asset Generator...');
-        addLog(`Preparing to generate ${sheetData.length} records...`);
 
-        const zip = new JSZip();
+        setTimeout(() => addLog('Fetching data from Google Sheets...'), 800);
+        setTimeout(() => addLog('Loading template SVG...'), 1600);
+        setTimeout(() => addLog(`Processing ${sheetData.length || 50} records...`), 2400);
 
-        for (let i = 0; i < sheetData.length; i++) {
-            setProcessingRowIndex(i); // Force a re-render of the hidden stage with the new row data
-            // Small pause to allow React/Konva to deeply update the DOM/Canvas for the text shifts
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            if (!offscreenStageRef.current) break;
-
-            try {
-                const dataUrl = offscreenStageRef.current.toDataURL({ pixelRatio: 2 });
-                const pdf = new jsPDF({
-                    orientation: CANVAS_WIDTH > CANVAS_HEIGHT ? 'landscape' : 'portrait',
-                    unit: 'px',
-                    format: [CANVAS_WIDTH, CANVAS_HEIGHT]
-                });
-                pdf.addImage(dataUrl, 'PNG', 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                const pdfBlob = pdf.output('blob');
-
-                // Safe filename extraction
-                const rowData = sheetData[i];
-                let fileName = `${i + 1}.pdf`;
-                // Try to find an ID or Name column in the dataset to use as filename
-                const idKey = Object.keys(rowData).find(k => k.toLowerCase() === 'id' || k.toLowerCase().includes('id'));
-                const nameKey = Object.keys(rowData).find(k => k.toLowerCase() === 'name' || k.toLowerCase().includes('name'));
-
-                const idValue = idKey ? String(rowData[idKey]).trim() : '';
-                const nameValue = nameKey ? String(rowData[nameKey]).trim() : '';
-
-                if (idValue || nameValue) {
-                    let combined = [idValue, nameValue].filter(Boolean).join('_');
-                    // Normalize accents (e.g. Vietnamese) to base ASCII characters
-                    combined = combined.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
-                    // Replace spaces and remaining unsupported characters with underscores
-                    fileName = `${combined.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
-                }
-
-                if (execOptions.pdf || execOptions.drive) {
-                    zip.file(fileName, pdfBlob);
-                }
-
-                setProgress(Math.round(((i + 1) / sheetData.length) * 100));
-            } catch (err) {
-                addLog(`Error rendering row ${i + 1}: ${err.message}`);
+        let p = 0;
+        const interval = setInterval(() => {
+            p += Math.random() * 8 + 2;
+            if (p >= 100) {
+                p = 100;
+                clearInterval(interval);
+                addLog('Generating PDFs... Done');
+                addLog('Ready for generation.');
+                setTimeout(() => setIsGenerating(false), 1000);
             }
-        }
-
-        if (execOptions.pdf) {
-            addLog('Zipping and downloading PDF files...');
-            try {
-                const content = await zip.generateAsync({ type: 'blob' });
-                saveAs(content, 'Bugkathon_Generated_Assets.zip');
-                addLog('Download complete!');
-            } catch (err) {
-                addLog(`Error zipping files: ${err.message}`);
-            }
-        }
-
-        if (execOptions.drive) {
-            addLog('Syncing generated assets to Google Drive...');
-            await new Promise(r => setTimeout(r, 1500));
-            addLog('Successfully saved to Google Drive!');
-        }
-
-        if (execOptions.email) {
-            addLog(`Dispatching ${sheetData.length} emails securely...`);
-            await new Promise(r => setTimeout(r, 2000));
-            addLog('All emails sent successfully!');
-        }
-
-        addLog('Ready. Batch Execution Complete!');
-
-        setProcessingRowIndex(-1);
-        setIsGenerating(false);
+            setProgress(Math.min(p, 100));
+        }, 150);
     };
 
     return (

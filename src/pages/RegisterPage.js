@@ -1,75 +1,34 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { VALIDATION } from '../constants';
+import authService from '../services/authService';
 import './RegisterPage.css';
 /* Small Bugkathon logo */
 const BugkathonLogoSmall = () => (
     <img src="/assets/bugkathon_logo.svg" alt="Bugkathon" style={{ width: 'auto', height: 'auto' }} />
 );
 function RegisterPage() {
+    const navigate = useNavigate();
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [errors, setErrors] = useState({});
-    const navigate = useNavigate();
-
-    const validateForm = () => {
-        const newErrors = {};
-
-        // Full name validation
-        if (!fullName.trim()) {
-            newErrors.fullName = 'Full name is required';
-        } else if (fullName.trim().length < VALIDATION.MIN_NAME_LENGTH) {
-            newErrors.fullName = `Full name must be at least ${VALIDATION.MIN_NAME_LENGTH} characters`;
-        }
-
-        // Email validation
-        if (!email) {
-            newErrors.email = 'Email is required';
-        } else if (!VALIDATION.EMAIL_REGEX.test(email)) {
-            newErrors.email = 'Email is invalid';
-        }
-
-        // Password validation
-        if (!password) {
-            newErrors.password = 'Password is required';
-        } else if (password.length < VALIDATION.MIN_PASSWORD_LENGTH) {
-            newErrors.password = `Password must be at least ${VALIDATION.MIN_PASSWORD_LENGTH} characters`;
-        }
-
-        // Confirm password validation
-        if (!confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
-        } else if (password !== confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (validateForm()) {
-            const newUser = {
-                id: Date.now().toString(),
-                fullName,
+        if (password !== confirmPassword) {
+            alert('Mật khẩu không khớp.');
+            return;
+        }
+        try {
+            await authService.register({
                 email,
-                password, // Mock storage, obviously insecure in real life
-                role: 'Student'
-            };
-
-            // Generate or append to mock_users
-            const existingUsersStr = localStorage.getItem('mock_users');
-            const mockUsers = existingUsersStr ? JSON.parse(existingUsersStr) : [];
-            mockUsers.push(newUser);
-            localStorage.setItem('mock_users', JSON.stringify(mockUsers));
-
-            // "Log in" as the new user
-            localStorage.setItem('current_user', JSON.stringify(newUser));
-
-            navigate('/templates');
+                name: fullName,
+                password,
+                role: 'MEMBER',
+            });
+            navigate('/login');
+        } catch (error) {
+            const message = error.response?.data?.detail || 'Đăng ký thất bại.';
+            alert(message);
         }
     };
     return (

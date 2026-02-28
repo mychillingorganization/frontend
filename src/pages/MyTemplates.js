@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffect } from 'react';
 import './MyTemplates.css';
 import { useNavigate } from 'react-router-dom';
 import ProfileIcon from '../components/ProfileIcon';
@@ -168,7 +168,6 @@ const MyTemplates = () => {
 
   return (
     <div className="my-templates-container">
-      {/* Top Navbar */}
       <nav className="top-navbar">
         <div className="nav-logo" style={{ background: 'none', padding: 0, width: '40px' }}>
           <div className="home-logo-icon" style={{ width: '40px', height: '40px', cursor: 'pointer' }} onClick={() => navigate('/')}>
@@ -242,8 +241,8 @@ const MyTemplates = () => {
 
               <div className="card-footer">
                 <div className="card-info">
-                  <h3>{template.title}</h3>
-                  <p>Last edited {template.lastEdited}</p>
+                  <h3>{template.name}</h3>
+                  <p>{template.created_at ? new Date(template.created_at).toLocaleDateString() : ''}</p>
                 </div>
 
                 <div className="card-menu-wrapper">
