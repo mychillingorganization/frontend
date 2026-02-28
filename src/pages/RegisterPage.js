@@ -1,18 +1,35 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 import './RegisterPage.css';
 /* Small Bugkathon logo */
 const BugkathonLogoSmall = () => (
     <img src="/assets/bugkathon_logo.svg" alt="Bugkathon" style={{ width: 'auto', height: 'auto' }} />
 );
 function RegisterPage() {
+    const navigate = useNavigate();
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Register:', { fullName, email, password, confirmPassword });
+        if (password !== confirmPassword) {
+            alert('Mật khẩu không khớp.');
+            return;
+        }
+        try {
+            await authService.register({
+                email,
+                name: fullName,
+                password,
+                role: 'MEMBER',
+            });
+            navigate('/login');
+        } catch (error) {
+            const message = error.response?.data?.detail || 'Đăng ký thất bại.';
+            alert(message);
+        }
     };
     return (
         <div className="register-page">

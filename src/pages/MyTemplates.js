@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './MyTemplates.css';
-import { useNavigate, Link } from 'react-router-dom'; 
+import { useNavigate, Link } from 'react-router-dom';
+import templateService from '../services/templateService';
 
 
-// Dữ liệu mẫu hiển thị danh sách các Template
-const templatesData =[
-  { id: 1, title: 'Hackathon 2026 Certificate', lastEdited: '2 days ago' },
-  { id: 2, title: 'Developer Conference Badge', lastEdited: '5 days ago' },
-  { id: 3, title: 'Workshop Completion Award', lastEdited: '1 week ago' },
-  { id: 4, title: 'Community Event Pass', lastEdited: '2 weeks ago' },
-  { id: 5, title: 'Speaker Appreciation Certificate', lastEdited: '3 weeks ago' },
-];
 
 const MyTemplates = () => {
-    const navigate = useNavigate(); 
-  const [activeMenu, setActiveMenu] = useState(null);
+    const navigate = useNavigate();
+    const [activeMenu, setActiveMenu] = useState(null);
+    const [templates, setTemplates] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const data = await templateService.getAll();
+                setTemplates(data);
+            } catch (error) {
+                console.error('Failed to load templates:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchTemplates();
+    }, []);
 
   // Xử lý bật/tắt menu (Edit, Duplicate, Delete)
   const toggleMenu = (id) => {
@@ -75,7 +84,7 @@ const MyTemplates = () => {
 
         {/* Danh sách các mẫu (Grid) */}
         <div className="template-grid">
-          {templatesData.map((template) => (
+          {templates.map((template) => (
             <div className="template-card" key={template.id}>
               <div className="card-preview">
                 <div className="preview-placeholder">
@@ -86,8 +95,8 @@ const MyTemplates = () => {
               
               <div className="card-footer">
                 <div className="card-info">
-                  <h3>{template.title}</h3>
-                  <p>Last edited {template.lastEdited}</p>
+                  <h3>{template.name}</h3>
+                  <p>{template.created_at ? new Date(template.created_at).toLocaleDateString() : ''}</p>
                 </div>
                 
                 <div className="card-menu-wrapper">

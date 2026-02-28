@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import generationLogService from '../services/generationLogService';
 import './GeneratorPage.css';
 
 const SAMPLE_TEMPLATES = [
@@ -22,6 +23,15 @@ const GeneratorPage = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [progress, setProgress] = useState(0);
     const [previewRowIndex, setPreviewRowIndex] = useState(0);
+    const [selectedTemplateId, setSelectedTemplateId] = useState('');
+    const [driveFolderId, setDriveFolderId] = useState('');
+    const stopPollingRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (stopPollingRef.current) stopPollingRef.current();
+        };
+    }, []);
 
     const addLog = (msg) => {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -45,28 +55,52 @@ const GeneratorPage = () => {
         setMappings(prev => ({ ...prev, [variable]: column }));
     };
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
+        if (!sheetsUrl.trim()) {
+            alert('Vui lòng nhập Google Sheets URL.');
+            return;
+        }
+        if (!selectedTemplateId) {
+            alert('Vui lòng chọn template.');
+            return;
+        }
+
         setIsGenerating(true);
         setProgress(0);
         setLogs([]);
         addLog('Initializing GDGoC Asset Generator...');
 
-        setTimeout(() => addLog('Fetching data from Google Sheets...'), 800);
-        setTimeout(() => addLog('Loading template SVG...'), 1600);
-        setTimeout(() => addLog(`Processing ${sheetData.length || 50} records...`), 2400);
+        try {
+            const log = await generationLogService.trigger({
+                template_id: selectedTemplateId,
+                google_sheet_url: sheetsUrl,
+                drive_folder_id: driveFolderId || undefined,
+            });
 
-        let p = 0;
-        const interval = setInterval(() => {
-            p += Math.random() * 8 + 2;
-            if (p >= 100) {
-                p = 100;
-                clearInterval(interval);
-                addLog('Generating PDFs... Done');
-                addLog('Ready for generation.');
-                setTimeout(() => setIsGenerating(false), 1000);
-            }
-            setProgress(Math.min(p, 100));
-        }, 150);
+            addLog(`Batch job created: ${log.id}`);
+            addLog(`Status: ${log.status} — waiting for processing...`);
+
+            stopPollingRef.current = generationLogService.pollStatus(
+                log.id,
+                (status) => {
+                    setProgress(status.progress_percent);
+                    addLog(`[${status.status}] ${status.processed}/${status.total_records} records processed`);
+                    if (status.status === 'COMPLETED') {
+                        addLog('✅ Generation completed! Check Google Drive and emails.');
+                        setIsGenerating(false);
+                    }
+                    if (status.status === 'FAILED') {
+                        addLog('❌ Generation failed. Check server logs.');
+                        setIsGenerating(false);
+                    }
+                },
+                2500
+            );
+        } catch (error) {
+            const message = error.response?.data?.detail || error.message;
+            addLog(`❌ Error: ${message}`);
+            setIsGenerating(false);
+        }
     };
 
     return (

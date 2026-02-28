@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 import './LoginPage.css';
 /* Small Bugkathon logo */
 const BugkathonLogoSmall = () => (
@@ -7,11 +8,18 @@ const BugkathonLogoSmall = () => (
 );
 
 function LoginPage() {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Login:', { email, password });
+        try {
+            await authService.login({ email, password });
+            navigate('/templates');
+        } catch (error) {
+            const message = error.response?.data?.detail || 'Đăng nhập thất bại.';
+            alert(message);
+        }
     };
     return (
         <div className="login-page">
