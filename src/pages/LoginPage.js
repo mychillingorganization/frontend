@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { VALIDATION } from '../constants';
 import authService from '../services/authService';
 import './LoginPage.css';
@@ -12,6 +12,36 @@ function LoginPage() {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+    const handleGoogleSignIn = async () => {
+        setIsGoogleLoading(true);
+        // Simulate OAuth Redirect Delay
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        // Mock Google User Object
+        const mockGoogleUser = {
+            id: 'google_oauth_987654321',
+            name: 'Google User',
+            email: 'google.user@gmail.com',
+            authProvider: 'google',
+            created_at: new Date().toISOString(),
+            role: 'Student'
+        };
+
+        // Auto-register them in local storage mock DB if they don't exist
+        const existingUsersStr = localStorage.getItem('mock_users');
+        let mockUsers = existingUsersStr ? JSON.parse(existingUsersStr) : [];
+        if (!mockUsers.find(u => u.email === mockGoogleUser.email)) {
+            mockUsers.push(mockGoogleUser);
+            localStorage.setItem('mock_users', JSON.stringify(mockUsers));
+        }
+
+        // Sign them in
+        localStorage.setItem('current_user', JSON.stringify(mockGoogleUser));
+        navigate('/templates');
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         console.log('Login:', { email, password });
@@ -57,7 +87,6 @@ function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
-                        {errors.email && <span style={{ color: '#EA4335', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.email}</span>}
                     </div>
                     <div className="form-group">
                         <label className="form-label">Password</label>
@@ -68,7 +97,6 @@ function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
-                        {errors.password && <span style={{ color: '#EA4335', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.password}</span>}
                     </div>
                     <span className="login-forgot">Forgotten password?</span>
                     <button type="submit" className="login-submit">Sign In</button>

@@ -52,7 +52,6 @@ function RegisterPage() {
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
                         />
-                        {errors.fullName && <span style={{ color: '#EA4335', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.fullName}</span>}
                     </div>
                     <div className="form-group">
                         <label className="form-label">Email</label>
@@ -63,7 +62,6 @@ function RegisterPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
-                        {errors.email && <span style={{ color: '#EA4335', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.email}</span>}
                     </div>
                     <div className="form-group">
                         <label className="form-label">Password</label>
@@ -74,7 +72,6 @@ function RegisterPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
-                        {errors.password && <span style={{ color: '#EA4335', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.password}</span>}
                     </div>
                     <div className="form-group">
                         <label className="form-label">Confirm Password</label>
@@ -85,7 +82,6 @@ function RegisterPage() {
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                         />
-                        {errors.confirmPassword && <span style={{ color: '#EA4335', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.confirmPassword}</span>}
                     </div>
                     <button type="submit" className="register-submit">Create Account</button>
                 </form>

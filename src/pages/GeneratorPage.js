@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import generationLogService from '../services/generationLogService';
 import Papa from 'papaparse';
@@ -71,7 +71,12 @@ const GeneratorPage = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [progress, setProgress] = useState(0);
     const [previewRowIndex, setPreviewRowIndex] = useState(0);
+    const csvInputRef = useRef(null);
+    const offscreenStageRef = useRef(null);
 
+    const [processingRowIndex, setProcessingRowIndex] = useState(-1);
+    const [execOptions, setExecOptions] = useState({ pdf: true, drive: false, email: false });
+    const [emailColumn, setEmailColumn] = useState('');
     const addLog = (msg) => {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
         setLogs(prev => [...prev, `[${time}] ${msg}`]);
