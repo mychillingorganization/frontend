@@ -59,6 +59,46 @@ const defaultTemplates = [
       { id: 'name_var', type: 'text', x: 0, y: 260, width: 800, text: '{{name}}', fontSize: 40, fontFamily: 'Times New Roman', fill: '#1A73E8', align: 'center', fontStyle: 'italic', textDecoration: '', opacity: 1 },
       { id: 'deco_diamond', type: 'diamond', x: 400, y: 80, radius: 20, fill: '#FBBC04', strokeWidth: 0, opacity: 1 }
     ]
+  },
+  {
+    id: 4,
+    title: 'GDGoC FPTU Certificate',
+    lastEdited: 'Just now',
+    variables: ['name', 'event_name', 'date'],
+    elements: [
+      { id: 'bg', type: 'rect', x: 0, y: 0, width: 800, height: 500, fill: '#FFFFFF', stroke: '#E3E3E3', strokeWidth: 8, opacity: 1 },
+
+      { id: 'bg_circle_blue', type: 'circle', x: 0, y: 500, radius: 250, fill: '#4285F4', strokeWidth: 0, opacity: 0.1 },
+      { id: 'bg_circle_red', type: 'circle', x: 800, y: 0, radius: 300, fill: '#DB4437', strokeWidth: 0, opacity: 0.08 },
+      { id: 'bg_circle_yellow', type: 'circle', x: 0, y: 0, radius: 150, fill: '#F4B400', strokeWidth: 0, opacity: 0.15 },
+      { id: 'bg_circle_green', type: 'circle', x: 800, y: 500, radius: 200, fill: '#0F9D58', strokeWidth: 0, opacity: 0.1 },
+
+      { id: 'top_left_blue', type: 'rect', x: 0, y: 0, width: 150, height: 20, fill: '#4285F4', strokeWidth: 0, opacity: 1 },
+      { id: 'top_left_red', type: 'rect', x: 150, y: 0, width: 100, height: 20, fill: '#DB4437', strokeWidth: 0, opacity: 1 },
+      { id: 'top_left_yellow', type: 'rect', x: 250, y: 0, width: 80, height: 20, fill: '#F4B400', strokeWidth: 0, opacity: 1 },
+      { id: 'top_left_green', type: 'rect', x: 330, y: 0, width: 120, height: 20, fill: '#0F9D58', strokeWidth: 0, opacity: 1 },
+
+      { id: 'fptu_orange_bar', type: 'rect', x: 600, y: 0, width: 200, height: 20, fill: '#F27024', strokeWidth: 0, opacity: 1 },
+
+      { id: 'org_name', type: 'text', x: 40, y: 60, width: 720, text: 'Google Developer Groups On Campus', fontSize: 24, fontFamily: 'Arial', fill: '#5F6368', align: 'center', fontStyle: 'bold', textDecoration: '', opacity: 1 },
+      { id: 'uni_name', type: 'text', x: 40, y: 90, width: 720, text: 'FPT University', fontSize: 18, fontFamily: 'Arial', fill: '#F27024', align: 'center', fontStyle: 'bold', textDecoration: '', opacity: 1 },
+
+      { id: 'title', type: 'text', x: 0, y: 150, width: 800, text: 'CERTIFICATE OF APPRECIATION', fontSize: 32, fontFamily: 'Arial', fill: '#202124', align: 'center', fontStyle: 'bold', textDecoration: '', opacity: 1 },
+
+      { id: 'presented', type: 'text', x: 0, y: 210, width: 800, text: 'This is proudly presented to', fontSize: 16, fontFamily: 'Arial', fill: '#5F6368', align: 'center', fontStyle: 'italic', textDecoration: '', opacity: 1 },
+
+      { id: 'name_var', type: 'text', x: 0, y: 250, width: 800, text: '{{name}}', fontSize: 48, fontFamily: 'Times New Roman', fill: '#4285F4', align: 'center', fontStyle: 'bold italic', textDecoration: '', opacity: 1 },
+
+      { id: 'reason', type: 'text', x: 0, y: 330, width: 800, text: 'in recognition of their active participation and contribution to', fontSize: 16, fontFamily: 'Arial', fill: '#5F6368', align: 'center', fontStyle: 'normal', textDecoration: '', opacity: 1 },
+
+      { id: 'event_var', type: 'text', x: 0, y: 360, width: 800, text: '{{event_name}}', fontSize: 22, fontFamily: 'Arial', fill: '#DB4437', align: 'center', fontStyle: 'bold', textDecoration: '', opacity: 1 },
+
+      { id: 'date_var', type: 'text', x: 100, y: 430, width: 200, text: '{{date}}', fontSize: 16, fontFamily: 'Arial', fill: '#202124', align: 'center', fontStyle: 'normal', textDecoration: '', opacity: 1 },
+      { id: 'date_line', type: 'line', x: 100, y: 460, width: 200, height: 2, fill: '#BDC1C6', filled: true },
+
+      { id: 'sig_var', type: 'text', x: 500, y: 430, width: 200, text: 'GDGoC FPTU Lead', fontSize: 16, fontFamily: 'Arial', fill: '#202124', align: 'center', fontStyle: 'italic', textDecoration: '', opacity: 1 },
+      { id: 'sig_line', type: 'line', x: 500, y: 460, width: 200, height: 2, fill: '#BDC1C6', filled: true }
+    ]
   }
 ];
 
@@ -164,7 +204,7 @@ const MyTemplates = () => {
             </div>
 
             <button className="btn-ghost" onClick={() => {
-              if (window.confirm("This will erase any custom templates and restore the 3 default designs. Continue?")) {
+              if (window.confirm("This will erase any custom templates and restore the 4 default designs. Continue?")) {
                 localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(defaultTemplates));
                 setTemplates(defaultTemplates);
               }

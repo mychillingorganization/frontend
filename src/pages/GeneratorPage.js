@@ -6,10 +6,27 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import ProfileIcon from '../components/ProfileIcon';
 import { Stage, Layer, Rect, Text, Transformer, Circle, RegularPolygon, Star, Line as KonvaLine, Image as KonvaImage } from 'react-konva';
+import useImage from 'use-image';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, DEFAULT_TEMPLATE_VARIABLES, STORAGE_KEYS } from '../constants';
 import './GeneratorPage.css';
 
 const TEMPLATE_VARIABLES = DEFAULT_TEMPLATE_VARIABLES;
+
+// Custom lightweight Image Renderer for Generator
+const GeneratorImage = ({ shapeProps }) => {
+    const [image] = useImage(shapeProps.src);
+    return (
+        <KonvaImage
+            image={image}
+            x={shapeProps.x}
+            y={shapeProps.y}
+            width={shapeProps.width}
+            height={shapeProps.height}
+            opacity={shapeProps.opacity != null ? shapeProps.opacity : 1}
+        />
+    );
+};
+
 
 const GeneratorPage = () => {
     const navigate = useNavigate();
@@ -398,6 +415,7 @@ const GeneratorPage = () => {
                                                     if (el.type === 'circle') return <Circle key={el.id} x={el.x} y={el.y} radius={el.radius} fill={fillOpt} stroke={strokeOpt} strokeWidth={strokeWidthOpt} opacity={el.opacity != null ? el.opacity : 1} />;
                                                     if (el.type === 'triangle') return <RegularPolygon key={el.id} sides={3} x={el.x} y={el.y} radius={el.radius} fill={fillOpt} stroke={strokeOpt} strokeWidth={strokeWidthOpt} opacity={el.opacity != null ? el.opacity : 1} />;
                                                     if (el.type === 'star') return <Star key={el.id} numPoints={5} innerRadius={el.innerRadius} outerRadius={el.radius} x={el.x} y={el.y} fill={fillOpt} stroke={strokeOpt} strokeWidth={strokeWidthOpt} opacity={el.opacity != null ? el.opacity : 1} />;
+                                                    if (el.type === 'image') return <GeneratorImage key={el.id} shapeProps={el} />;
 
                                                     if (el.type === 'text') {
                                                         let displayTxt = el.text;
@@ -538,6 +556,7 @@ const GeneratorPage = () => {
                                 if (el.type === 'circle') return <Circle key={`gen_${el.id}`} x={el.x} y={el.y} radius={el.radius} fill={fillOpt} stroke={strokeOpt} strokeWidth={strokeWidthOpt} opacity={el.opacity != null ? el.opacity : 1} />;
                                 if (el.type === 'triangle') return <RegularPolygon key={`gen_${el.id}`} sides={3} x={el.x} y={el.y} radius={el.radius} fill={fillOpt} stroke={strokeOpt} strokeWidth={strokeWidthOpt} opacity={el.opacity != null ? el.opacity : 1} />;
                                 if (el.type === 'star') return <Star key={`gen_${el.id}`} numPoints={5} innerRadius={el.innerRadius} outerRadius={el.radius} x={el.x} y={el.y} fill={fillOpt} stroke={strokeOpt} strokeWidth={strokeWidthOpt} opacity={el.opacity != null ? el.opacity : 1} />;
+                                if (el.type === 'image') return <GeneratorImage key={`gen_${el.id}`} shapeProps={el} />;
 
                                 if (el.type === 'text') {
                                     let displayTxt = el.text;
